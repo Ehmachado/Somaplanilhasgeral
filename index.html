@@ -4,7 +4,21 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Somador de Planilhas — com Mapeamento</title>
-  <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- 1) Tenta carregar local (raiz do projeto) -->
+  <script src="./xlsx.full.min.js"></script>
+  <!-- 2) Fallback para CDN se o arquivo local não carregar -->
+  <script>
+    (function ensureXLSX() {
+      if (window.XLSX) return;
+      var s = document.createElement('script');
+      s.src = 'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';
+      s.defer = true;
+      s.onload = function(){ if(!window.XLSX){ console.error('Falha ao carregar XLSX da CDN.'); } };
+      document.head.appendChild(s);
+    })();
+  </script>
+
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
@@ -210,11 +224,7 @@
     // Gera opções A..BZ (inclui AT)
     const COLS = (()=> {
       const letters = [];
-      const A=65,Z=90;
-      function toCol(n){ // 1-based to letters
-        let s=''; while(n>0){const r=(n-1)%26; s=String.fromCharCode(65+r)+s; n=Math.floor((n-1)/26);}
-        return s;
-      }
+      function toCol(n){ let s=''; while(n>0){const r=(n-1)%26; s=String.fromCharCode(65+r)+s; n=Math.floor((n-1)/26);} return s; }
       for(let i=1;i<=78;i++) letters.push(toCol(i)); // até BZ
       return letters;
     })();
