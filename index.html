@@ -5,16 +5,14 @@
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>Somador de Planilhas — com Mapeamento</title>
 
-  <!-- 1) Tenta carregar local (raiz do projeto) -->
+  <!-- carrega XLSX local + fallback CDN -->
   <script src="./xlsx.full.min.js"></script>
-  <!-- 2) Fallback para CDN se o arquivo local não carregar -->
   <script>
     (function ensureXLSX() {
       if (window.XLSX) return;
       var s = document.createElement('script');
       s.src = 'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js';
       s.defer = true;
-      s.onload = function(){ if(!window.XLSX){ console.error('Falha ao carregar XLSX da CDN.'); } };
       document.head.appendChild(s);
     })();
   </script>
@@ -26,13 +24,11 @@
     .header{background:linear-gradient(45deg,#4CAF50,#45a049);color:#fff;padding:26px;text-align:center}
     .header h1{font-size:2.1em;margin-bottom:6px;font-weight:800}
     .header p{opacity:.95}
-
     .tabs{display:flex;gap:8px;background:#f3f5f7;padding:10px 10px 0;border-bottom:1px solid #e7e7e7}
     .tab-btn{appearance:none;border:0;background:#e9eef3;padding:10px 16px;border-top-left-radius:10px;border-top-right-radius:10px;font-weight:700;cursor:pointer;transition:.2s}
     .tab-btn.active{background:#fff;box-shadow:0 -2px 8px rgba(0,0,0,.05)}
     .tab-pane{display:none;padding:20px 30px 30px}
     .tab-pane.active{display:block}
-
     .section-title{font-weight:800;color:#333;margin:10px 0 8px}
     .upload-section{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin:14px 0 18px}
     .upload-box{background:#f8f9fa;border:2px dashed #dee2e6;border-radius:15px;padding:22px;text-align:center;transition:.3s}
@@ -41,12 +37,11 @@
     .upload-btn{background:#4CAF50;color:#fff;border:none;padding:12px 22px;border-radius:25px;cursor:pointer;font-weight:700}
     .upload-btn:hover{background:#45a049;transform:translateY(-1px)}
     .file-info{margin-top:10px;padding:8px;background:#e3f2fd;border-radius:8px;font-size:.92em;color:#1565c0}
-
     .map-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:#f8fafc;border:1px solid #e8eef5;border-radius:12px;padding:12px;margin:8px 0 18px}
     .map-item{display:flex;flex-direction:column;gap:6px}
     .map-item label{font-size:.9em;color:#333;font-weight:700}
     .map-item select,.map-item input{padding:8px 10px;border:1px solid #d9e2ec;border-radius:10px;background:#fff}
-
+    .map-wide{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
     .controls{display:flex;gap:10px;justify-content:center;margin:10px 0 20px;flex-wrap:wrap}
     .btn{padding:12px 18px;border:none;border-radius:25px;cursor:pointer;font-size:1em;font-weight:700;min-width:180px}
     .btn:disabled{background:#ccc;cursor:not-allowed}
@@ -54,7 +49,6 @@
     .btn-primary:hover:not(:disabled){background:#45a049}
     .btn-secondary{background:#2196F3;color:#fff}
     .btn-secondary:hover:not(:disabled){background:#1976D2}
-
     .status-section{margin:12px 0;padding:14px;border-radius:10px;display:none}
     .status-info{background:#e3f2fd;border:1px solid #bbdefb;color:#1565c0}
     .status-error{background:#ffebee;border:1px solid #ffcdd2;color:#c62828}
@@ -62,7 +56,6 @@
     .error-details{background:#fff3cd;border:1px solid #ffeaa7;border-radius:10px;padding:12px;margin:8px 0 16px;display:none}
     .error-details h4{color:#856404;margin-bottom:6px}
     .error-list{color:#856404;font-size:.92em}
-
     .results-section{margin-top:8px;display:none}
     .results-header{background:#f8f9fa;padding:14px;border-radius:10px;margin-bottom:12px}
     .results-header h3{color:#333;margin-bottom:8px}
@@ -79,9 +72,8 @@
     .loading{display:none;text-align:center;padding:12px}
     .spinner{border:4px solid #f3f3f3;border-top:4px solid #4CAF50;border-radius:50%;width:34px;height:34px;animation:spin 1s linear infinite;margin:0 auto 8px}
     @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
-
     @media(max-width:900px){.upload-section{grid-template-columns:1fr}.map-grid{grid-template-columns:repeat(2,1fr)}}
-    @media(max-width:560px){.map-grid{grid-template-columns:1fr}}
+    @media(max-width:560px){.map-grid{grid-template-columns:1fr}.map-wide{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
@@ -114,7 +106,7 @@
         </div>
       </div>
 
-      <!-- MAPEAMENTO: Aba 1 (aplicado a AMBAS as planilhas) -->
+      <!-- Mapeamento + cabeçalho -->
       <div class="section-title">Mapeamento de Colunas (Aba 1)</div>
       <div class="map-grid" id="mapGrid1">
         <div class="map-item"><label>Prefixo</label><select id="map1_prefix"></select></div>
@@ -123,6 +115,12 @@
         <div class="map-item"><label>Tipo de Carteira</label><select id="map1_tipo"></select></div>
         <div class="map-item"><label>Realizado</label><select id="map1_realizado"></select></div>
         <div class="map-item"><label>Intradia (D-0)</label><select id="map1_intradia"></select></div>
+        <div class="map-item map-wide">
+          <div>
+            <label>Cabeçalho (linhas a pular)</label>
+            <input type="number" id="map1_skip" min="0" value="2"/>
+          </div>
+        </div>
       </div>
 
       <div class="controls">
@@ -170,7 +168,6 @@
         </div>
       </div>
 
-      <!-- MAPEAMENTO: Aba 2 -->
       <div class="section-title">Mapeamento de Colunas (Aba 2)</div>
       <div class="map-grid" id="mapGrid2">
         <div class="map-item"><label>Prefixo</label><select id="map2_prefix"></select></div>
@@ -179,6 +176,12 @@
         <div class="map-item"><label>Tipo de Carteira</label><select id="map2_tipo"></select></div>
         <div class="map-item"><label>Realizado</label><select id="map2_realizado"></select></div>
         <div class="map-item"><label>Intradia (D-0)</label><select id="map2_intradia"></select></div>
+        <div class="map-item map-wide">
+          <div>
+            <label>Cabeçalho (linhas a pular)</label>
+            <input type="number" id="map2_skip" min="0" value="2"/>
+          </div>
+        </div>
       </div>
 
       <div class="controls">
@@ -221,50 +224,25 @@
     let resultadosAba1=[], resultadosAba2=[];
     let errosAba1=[], errosAba2=[];
 
-    // Gera opções A..BZ (inclui AT)
-    const COLS = (()=> {
-      const letters = [];
-      function toCol(n){ let s=''; while(n>0){const r=(n-1)%26; s=String.fromCharCode(65+r)+s; n=Math.floor((n-1)/26);} return s; }
-      for(let i=1;i<=78;i++) letters.push(toCol(i)); // até BZ
-      return letters;
-    })();
+    // Opções A..BZ
+    const COLS = (()=>{const L=[];function toCol(n){let s='';while(n>0){const r=(n-1)%26;s=String.fromCharCode(65+r)+s;n=Math.floor((n-1)/26);}return s;}for(let i=1;i<=78;i++)L.push(toCol(i));return L;})();
 
-    // Preenche selects de mapeamento com defaults
-    function fillMapSelects() {
-      const fields1=[ 'map1_prefix','map1_dependencia','map1_carteira','map1_tipo','map1_realizado','map1_intradia' ];
-      const fields2=[ 'map2_prefix','map2_dependencia','map2_carteira','map2_tipo','map2_realizado','map2_intradia' ];
-      [...fields1, ...fields2].forEach(id=>{
-        const sel=document.getElementById(id);
-        sel.innerHTML = COLS.map(c=>`<option value="${c}">${c}</option>`).join('');
-      });
-      // Defaults Aba 1: A,B,D,E,G,R
-      setSelectValue('map1_prefix','A');
-      setSelectValue('map1_dependencia','B');
-      setSelectValue('map1_carteira','D');
-      setSelectValue('map1_tipo','E');
-      setSelectValue('map1_realizado','G');
-      setSelectValue('map1_intradia','R');
-      // Defaults Aba 2: A,B,D,E,G,AT
-      setSelectValue('map2_prefix','A');
-      setSelectValue('map2_dependencia','B');
-      setSelectValue('map2_carteira','D');
-      setSelectValue('map2_tipo','E');
-      setSelectValue('map2_realizado','G');
-      setSelectValue('map2_intradia','AT');
+    function fillMapSelects(){
+      const f1=['map1_prefix','map1_dependencia','map1_carteira','map1_tipo','map1_realizado','map1_intradia'];
+      const f2=['map2_prefix','map2_dependencia','map2_carteira','map2_tipo','map2_realizado','map2_intradia'];
+      [...f1,...f2].forEach(id=>{const s=document.getElementById(id); s.innerHTML=COLS.map(c=>`<option value="${c}">${c}</option>`).join('');});
+      // defaults
+      setSelectValue('map1_prefix','A'); setSelectValue('map1_dependencia','B'); setSelectValue('map1_carteira','D'); setSelectValue('map1_tipo','E'); setSelectValue('map1_realizado','G'); setSelectValue('map1_intradia','R');
+      setSelectValue('map2_prefix','A'); setSelectValue('map2_dependencia','B'); setSelectValue('map2_carteira','D'); setSelectValue('map2_tipo','E'); setSelectValue('map2_realizado','G'); setSelectValue('map2_intradia','AT');
     }
-    function setSelectValue(id,val){
-      const sel=document.getElementById(id);
-      if(!sel) return;
-      const opt=[...sel.options].find(o=>o.value===val);
-      sel.value = opt? val : sel.options[0]?.value;
-    }
+    function setSelectValue(id,val){const s=document.getElementById(id); if(!s) return; const ok=[...s.options].some(o=>o.value===val); s.value= ok?val:s.options[0]?.value;}
 
     // Tabs
     function showTab(n){
       const b1=document.getElementById('tabBtn1'), b2=document.getElementById('tabBtn2');
       const p1=document.getElementById('tab1'), p2=document.getElementById('tab2');
-      if(n===1){ b1.classList.add('active'); b2.classList.remove('active'); p1.classList.add('active'); p2.classList.remove('active'); }
-      else     { b2.classList.add('active'); b1.classList.remove('active'); p2.classList.add('active'); p1.classList.remove('active'); }
+      if(n===1){b1.classList.add('active');b2.classList.remove('active');p1.classList.add('active');p2.classList.remove('active');}
+      else{b2.classList.add('active');b1.classList.remove('active');p2.classList.add('active');p1.classList.remove('active');}
     }
 
     // Drag & drop
@@ -283,17 +261,14 @@
       });
     }
 
-    // ===== ABA 1: duas planilhas =====
+    // ===== ABA 1 =====
     document.getElementById('file1').addEventListener('change', e=>handleFileSelect(e.target,'uploadBox1'));
     document.getElementById('file2').addEventListener('change', e=>handleFileSelect(e.target,'uploadBox2'));
 
     function handleFileSelect(input, boxId){
-      const file=input.files[0];
-      const info=document.getElementById('fileInfo'+boxId.slice(-1));
-      if(file){
-        info.innerHTML=`<strong>📁 ${file.name}</strong><br>Tamanho: ${formatFileSize(file.size)}<br>Tipo: ${file.type||'Excel'}`;
-        readExcelFile(file, parseInt(boxId.slice(-1)));
-      }else info.textContent='Nenhum arquivo selecionado';
+      const file=input.files[0]; const info=document.getElementById('fileInfo'+boxId.slice(-1));
+      if(file){ info.innerHTML=`<strong>📁 ${file.name}</strong><br>Tamanho: ${formatFileSize(file.size)}<br>Tipo: ${file.type||'Excel'}`; readExcelFile(file, parseInt(boxId.slice(-1))); }
+      else info.textContent='Nenhum arquivo selecionado';
     }
 
     function readExcelFile(file, idx){
@@ -303,32 +278,28 @@
         try{
           const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
           const ws=wb.Sheets[wb.SheetNames[0]];
-          // Mapeamento da aba 1 (aplica nos dois arquivos)
-          const map = getMapAba1();
-          const rows = readRowsMapped(ws, map);
+          const map=getMapAba1();
+          const skip=getSkip('map1_skip');
+          const rows=readRowsMapped(ws,map,skip);
           if(idx===1) planilha1Data=rows; else planilha2Data=rows;
           showStatus(`Arquivo ${file.name} carregado!`,'success');
-          updateButtonsAba1();
         }catch(err){
           showError(`Erro ao ler ${file.name}: ${err.message}`);
           if(idx===1) planilha1Data=null; else planilha2Data=null;
-          updateButtonsAba1();
+        } finally {
+          updateButtonsAba1(); // habilita mesmo com 0 linhas para permitir "Verificar"
         }
       };
-      reader.onerror=()=>showError(`Erro ao carregar ${file.name}`);
+      reader.onerror=()=>{ showError(`Erro ao carregar ${file.name}`); updateButtonsAba1(); };
       reader.readAsArrayBuffer(file);
     }
 
-    function getMapAba1(){
-      return {
-        a : document.getElementById('map1_prefix').value,
-        b : document.getElementById('map1_dependencia').value,
-        d : document.getElementById('map1_carteira').value,
-        e : document.getElementById('map1_tipo').value,
-        g : document.getElementById('map1_realizado').value,
-        r : document.getElementById('map1_intradia').value,
-      };
-    }
+    function getMapAba1(){ return {
+      a:val('map1_prefix'), b:val('map1_dependencia'), d:val('map1_carteira'),
+      e:val('map1_tipo'), g:val('map1_realizado'), r:val('map1_intradia')
+    }}
+    function val(id){return document.getElementById(id).value;}
+    function getSkip(id){ const n=parseInt(document.getElementById(id).value,10); return isFinite(n)&&n>=0?n:2; }
 
     function verificarErros(){
       errosAba1=[];
@@ -336,22 +307,20 @@
       list.innerHTML=''; box.style.display='block';
       let html='<h4>📋 Verificação</h4>';
 
-      if(!planilha1Data || !planilha2Data){
+      if(planilha1Data===null || planilha2Data===null){
         errosAba1.push('Carregue as duas planilhas.');
         html+='<p>❌ Uma ou ambas as planilhas não foram carregadas.</p>';
-      }else{
-        if(!planilha1Data.length){errosAba1.push('Planilha 1 vazia'); html+='<p>❌ Planilha 1 vazia.</p>'}
-        if(!planilha2Data.length){errosAba1.push('Planilha 2 vazia'); html+='<p>❌ Planilha 2 vazia.</p>'}
-
-        const p1ok = planilha1Data.some(r=>r && (isNum(r.rlz) || isNum(r.d0)));
-        const p2ok = planilha2Data.some(r=>r && (isNum(r.rlz) || isNum(r.d0)));
-        if(!p1ok){errosAba1.push('Planilha 1 sem Realizado/Intradia'); html+='<p>❌ Planilha 1 sem Realizado/Intradia.</p>'}
-        if(!p2ok){errosAba1.push('Planilha 2 sem Realizado/Intradia'); html+='<p>❌ Planilha 2 sem Realizado/Intradia.</p>'}
+      } else {
+        if(!planilha1Data.length) html+='<p>⚠️ Planilha 1 sem linhas após cabeçalho. Tente ajustar "Cabeçalho (linhas a pular)".</p>';
+        if(!planilha2Data.length) html+='<p>⚠️ Planilha 2 sem linhas após cabeçalho. Tente ajustar "Cabeçalho (linhas a pular)".</p>';
+        const p1ok = planilha1Data.some(r=>isNum(r.rlz)||isNum(r.d0));
+        const p2ok = planilha2Data.some(r=>isNum(r.rlz)||isNum(r.d0));
+        if(!p1ok){errosAba1.push('Planilha 1 sem Realizado/Intradia');}
+        if(!p2ok){errosAba1.push('Planilha 2 sem Realizado/Intradia');}
+        if(!errosAba1.length) html+='<p>✅ Pronto para processar.</p>';
       }
-
-      if(!errosAba1.length) html+='<p>✅ Pronto para processar.</p>';
       list.innerHTML=html;
-      showStatus('Verificação concluída!', errosAba1.length? 'error':'success');
+      showStatus('Verificação concluída!', errosAba1.length?'error':'success');
     }
 
     function processarPlanilhas(){
@@ -359,28 +328,10 @@
       showLoading(true);
       setTimeout(()=>{
         try{
-          const map = new Map();
-          (planilha1Data||[]).forEach(row=>{
-            if(!row) return;
-            const k = keyABDE(row);
-            if(!k) return;
-            map.set(k, {a:row.a,b:row.b,d:row.d,e:row.e, rlz:toNumberBR(row.rlz), d0:toNumberBR(row.d0)});
-          });
-          (planilha2Data||[]).forEach(row=>{
-            if(!row) return;
-            const k = keyABDE(row);
-            if(!k) return;
-            if(map.has(k)){
-              const it=map.get(k);
-              it.rlz += toNumberBR(row.rlz);
-              it.d0  += toNumberBR(row.d0);
-            }else{
-              map.set(k, {a:row.a,b:row.b,d:row.d,e:row.e, rlz:toNumberBR(row.rlz), d0:toNumberBR(row.d0)});
-            }
-          });
-          resultadosAba1 = Array.from(map.values())
-            .map(it=>({...it, total: it.rlz + it.d0}))
-            .sort(sortAB());
+          const map=new Map();
+          (planilha1Data||[]).forEach(row=>{const k=keyABDE(row); if(!k) return; map.set(k,{a:row.a,b:row.b,d:row.d,e:row.e, rlz:toNumberBR(row.rlz), d0:toNumberBR(row.d0)});});
+          (planilha2Data||[]).forEach(row=>{const k=keyABDE(row); if(!k) return; if(map.has(k)){const it=map.get(k); it.rlz+=toNumberBR(row.rlz); it.d0+=toNumberBR(row.d0);} else map.set(k,{a:row.a,b:row.b,d:row.d,e:row.e, rlz:toNumberBR(row.rlz), d0:toNumberBR(row.d0)});});
+          resultadosAba1 = Array.from(map.values()).map(it=>({...it,total:it.rlz+it.d0})).sort(sortAB());
           exibirResultadosAba1(resultadosAba1);
           showStatus('Processamento concluído!','success');
         }catch(e){ showError(`Erro no processamento: ${e.message}`); }
@@ -389,61 +340,37 @@
     }
 
     function exibirResultadosAba1(lista){
-      const tbody=document.getElementById('resultsBody');
-      const stats=document.getElementById('statsContainer');
-      const sec=document.getElementById('resultsSection');
-      tbody.innerHTML='';
-      let n=lista.length,sumRlz=0,sumD0=0,sumTot=0;
-      lista.forEach(it=>{
-        const tr=tbody.insertRow();
-        tr.innerHTML = `
-          <td>${it.a??''}</td><td>${it.b??''}</td><td>${it.d??''}</td><td>${it.e??''}</td>
-          <td>${formatNumber(it.rlz)}</td><td>${formatNumber(it.d0)}</td>
-          <td><strong>${formatNumber(it.total)}</strong></td>`;
-        sumRlz+=it.rlz; sumD0+=it.d0; sumTot+=it.total;
-      });
-      stats.innerHTML = `
-        <div class="stat-card"><div class="stat-number">${n}</div><div class="stat-label">Registros</div></div>
+      const tbody=document.getElementById('resultsBody'); const stats=document.getElementById('statsContainer'); const sec=document.getElementById('resultsSection');
+      tbody.innerHTML=''; let n=lista.length,sumRlz=0,sumD0=0,sumTot=0;
+      lista.forEach(it=>{ const tr=tbody.insertRow(); tr.innerHTML=`<td>${it.a??''}</td><td>${it.b??''}</td><td>${it.d??''}</td><td>${it.e??''}</td><td>${formatNumber(it.rlz)}</td><td>${formatNumber(it.d0)}</td><td><strong>${formatNumber(it.total)}</strong></td>`; sumRlz+=it.rlz; sumD0+=it.d0; sumTot+=it.total;});
+      stats.innerHTML=`<div class="stat-card"><div class="stat-number">${n}</div><div class="stat-label">Registros</div></div>
         <div class="stat-card"><div class="stat-number">${formatNumber(sumRlz)}</div><div class="stat-label">Total Realizado</div></div>
         <div class="stat-card"><div class="stat-number">${formatNumber(sumD0)}</div><div class="stat-label">Total Intradia (D-0)</div></div>
         <div class="stat-card"><div class="stat-number">${formatNumber(sumTot)}</div><div class="stat-label">Total (Rlz + D-0)</div></div>`;
       sec.style.display='block';
     }
 
-    function copiarTabela(){
-      copyTableToClipboard(document.getElementById('resultsTable'));
-      showStatus('Tabela copiada!','success');
-    }
+    function copiarTabela(){ copyTableToClipboard(document.getElementById('resultsTable')); showStatus('Tabela copiada!','success'); }
     function exportarExcel(){
       if(!resultadosAba1.length){showError('Sem resultados.');return;}
       const ws_data=[['Prefixo','Dependência','Carteira','Tipo Carteira','Realizado','Intradia (D-0)','Total (Rlz + D-0)']];
       resultadosAba1.forEach(it=>ws_data.push([it.a,it.b,it.d,it.e,it.rlz,it.d0,it.total]));
-      const ws=XLSX.utils.aoa_to_sheet(ws_data);
-      const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Resultados_DuasPlanilhas');
-      XLSX.writeFile(wb, `resultado_duas_planilhas_${dateStamp()}.xlsx`);
+      const ws=XLSX.utils.aoa_to_sheet(ws_data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Resultados_DuasPlanilhas'); XLSX.writeFile(wb, `resultado_duas_planilhas_${dateStamp()}.xlsx`);
       showStatus('Excel exportado!','success');
     }
-    function limparResultados(){
-      document.getElementById('resultsSection').style.display='none';
-      document.getElementById('errorDetails').style.display='none';
-      resultadosAba1=[]; errosAba1=[];
-      showStatus('Resultados limpos.','info');
-    }
+    function limparResultados(){ document.getElementById('resultsSection').style.display='none'; document.getElementById('errorDetails').style.display='none'; resultadosAba1=[]; errosAba1=[]; showStatus('Resultados limpos.','info'); }
     function updateButtonsAba1(){
-      const ok = !!(planilha1Data && planilha2Data);
+      const ok = (planilha1Data!==null && planilha2Data!==null); // habilita após ler (mesmo com 0 linhas)
       document.getElementById('verifyBtn').disabled=!ok;
-      document.getElementById('processBtn').disabled=!ok;
+      document.getElementById('processBtn').disabled=!ok || !!errosAba1.length;
     }
 
-    // ===== ABA 2: planilha única =====
+    // ===== ABA 2 =====
     document.getElementById('fileSingle').addEventListener('change', e=>handleFileSelectSingle(e.target));
     function handleFileSelectSingle(input){
-      const file=input.files[0];
-      const info=document.getElementById('fileInfoSingle');
-      if(file){
-        info.innerHTML=`<strong>📁 ${file.name}</strong><br>Tamanho: ${formatFileSize(file.size)}<br>Tipo: ${file.type||'Excel'}`;
-        readExcelFileSingle(file);
-      }else info.textContent='Nenhum arquivo selecionado';
+      const file=input.files[0]; const info=document.getElementById('fileInfoSingle');
+      if(file){ info.innerHTML=`<strong>📁 ${file.name}</strong><br>Tamanho: ${formatFileSize(file.size)}<br>Tipo: ${file.type||'Excel'}`; readExcelFileSingle(file); }
+      else info.textContent='Nenhum arquivo selecionado';
     }
     function readExcelFileSingle(file){
       showStatus2('Lendo arquivo…','info');
@@ -452,27 +379,22 @@
         try{
           const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'});
           const ws=wb.Sheets[wb.SheetNames[0]];
-          const map=getMapAba2();
-          singleData = readRowsMapped(ws, map);
+          const map=getMapAba2(); const skip=getSkip('map2_skip');
+          singleData = readRowsMapped(ws,map,skip);
           showStatus2(`Arquivo ${file.name} carregado!`,'success');
-          updateButtonsAba2();
         }catch(err){
-          singleData=null; showError2(`Erro ao ler: ${err.message}`); updateButtonsAba2();
+          singleData=null; showError2(`Erro ao ler: ${err.message}`);
+        } finally {
+          updateButtonsAba2(); // habilita "Verificar" mesmo se 0 linhas
         }
       };
-      reader.onerror=()=>showError2(`Erro ao carregar ${file.name}`);
+      reader.onerror=()=>{ showError2(`Erro ao carregar ${file.name}`); updateButtonsAba2(); };
       reader.readAsArrayBuffer(file);
     }
-    function getMapAba2(){
-      return {
-        a : document.getElementById('map2_prefix').value,
-        b : document.getElementById('map2_dependencia').value,
-        d : document.getElementById('map2_carteira').value,
-        e : document.getElementById('map2_tipo').value,
-        g : document.getElementById('map2_realizado').value,
-        r : document.getElementById('map2_intradia').value,
-      };
-    }
+    function getMapAba2(){ return {
+      a:val('map2_prefix'), b:val('map2_dependencia'), d:val('map2_carteira'),
+      e:val('map2_tipo'), g:val('map2_realizado'), r:val('map2_intradia')
+    }}
 
     function verificarErrosSingle(){
       errosAba2=[];
@@ -480,9 +402,9 @@
       list.innerHTML=''; box.style.display='block';
       let html='<h4>📋 Verificação</h4>';
 
-      if(!singleData){errosAba2.push('Carregue a planilha.'); html+='<p>❌ Nenhuma planilha carregada.</p>';}
-      else if(!singleData.length){errosAba2.push('Planilha vazia.'); html+='<p>❌ Planilha vazia.</p>';}
+      if(singleData===null){errosAba2.push('Carregue a planilha.'); html+='<p>❌ Nenhuma planilha carregada.</p>';}
       else{
+        if(!singleData.length) html+='<p>⚠️ Planilha sem linhas após cabeçalho. Ajuste "Cabeçalho (linhas a pular)".</p>';
         const temRlz = singleData.some(r=>isNum(r.rlz));
         const temD0  = singleData.some(r=>isNum(r.d0));
         if(!temRlz){errosAba2.push('Sem Realizado.'); html+='<p>❌ Coluna Realizado sem valores.</p>'}
@@ -490,7 +412,8 @@
         if(!errosAba2.length) html+='<p>✅ Pronto para processar.</p>';
       }
       list.innerHTML=html;
-      showStatus2('Verificação concluída!', errosAba2.length? 'error':'success');
+      showStatus2('Verificação concluída!', errosAba2.length?'error':'success');
+      updateButtonsAba2();
     }
 
     function processarPlanilhaUnica(){
@@ -499,20 +422,11 @@
       setTimeout(()=>{
         try{
           const map=new Map();
-          (singleData||[]).forEach(row=>{
-            const k=keyABDE(row);
-            if(!k) return;
-            if(map.has(k)){
-              const it=map.get(k);
-              it.rlz += toNumberBR(row.rlz);
-              it.d0  += toNumberBR(row.d0);
-            }else{
-              map.set(k, {a:row.a,b:row.b,d:row.d,e:row.e, rlz:toNumberBR(row.rlz), d0:toNumberBR(row.d0)});
-            }
+          (singleData||[]).forEach(row=>{ const k=keyABDE(row); if(!k) return;
+            if(map.has(k)){const it=map.get(k); it.rlz+=toNumberBR(row.rlz); it.d0+=toNumberBR(row.d0);}
+            else map.set(k,{a:row.a,b:row.b,d:row.d,e:row.e, rlz:toNumberBR(row.rlz), d0:toNumberBR(row.d0)});
           });
-          resultadosAba2 = Array.from(map.values())
-            .map(it=>({...it, total: it.rlz + it.d0}))
-            .sort(sortAB());
+          resultadosAba2 = Array.from(map.values()).map(it=>({...it,total:it.rlz+it.d0})).sort(sortAB());
           exibirResultadosAba2(resultadosAba2);
           showStatus2('Processamento concluído!','success');
         }catch(e){ showError2(`Erro no processamento: ${e.message}`); }
@@ -521,21 +435,10 @@
     }
 
     function exibirResultadosAba2(lista){
-      const tbody=document.getElementById('resultsBody2');
-      const stats=document.getElementById('statsContainer2');
-      const sec=document.getElementById('resultsSection2');
-      tbody.innerHTML='';
-      let n=lista.length,sumRlz=0,sumD0=0,sumTot=0;
-      lista.forEach(it=>{
-        const tr=tbody.insertRow();
-        tr.innerHTML=`
-          <td>${it.a??''}</td><td>${it.b??''}</td><td>${it.d??''}</td><td>${it.e??''}</td>
-          <td>${formatNumber(it.rlz)}</td><td>${formatNumber(it.d0)}</td>
-          <td><strong>${formatNumber(it.total)}</strong></td>`;
-        sumRlz+=it.rlz; sumD0+=it.d0; sumTot+=it.total;
-      });
-      stats.innerHTML=`
-        <div class="stat-card"><div class="stat-number">${n}</div><div class="stat-label">Registros</div></div>
+      const tbody=document.getElementById('resultsBody2'); const stats=document.getElementById('statsContainer2'); const sec=document.getElementById('resultsSection2');
+      tbody.innerHTML=''; let n=lista.length,sumRlz=0,sumD0=0,sumTot=0;
+      lista.forEach(it=>{ const tr=tbody.insertRow(); tr.innerHTML=`<td>${it.a??''}</td><td>${it.b??''}</td><td>${it.d??''}</td><td>${it.e??''}</td><td>${formatNumber(it.rlz)}</td><td>${formatNumber(it.d0)}</td><td><strong>${formatNumber(it.total)}</strong></td>`; sumRlz+=it.rlz; sumD0+=it.d0; sumTot+=it.total;});
+      stats.innerHTML=`<div class="stat-card"><div class="stat-number">${n}</div><div class="stat-label">Registros</div></div>
         <div class="stat-card"><div class="stat-number">${formatNumber(sumRlz)}</div><div class="stat-label">Total Realizado</div></div>
         <div class="stat-card"><div class="stat-number">${formatNumber(sumD0)}</div><div class="stat-label">Total Intradia (D-0)</div></div>
         <div class="stat-card"><div class="stat-number">${formatNumber(sumTot)}</div><div class="stat-label">Total (Rlz + D-0)</div></div>`;
@@ -547,94 +450,41 @@
       if(!resultadosAba2.length){showError2('Sem resultados.');return;}
       const ws_data=[['Prefixo','Dependência','Carteira','Tipo Carteira','Realizado','Intradia (D-0)','Total (Rlz + D-0)']];
       resultadosAba2.forEach(it=>ws_data.push([it.a,it.b,it.d,it.e,it.rlz,it.d0,it.total]));
-      const ws=XLSX.utils.aoa_to_sheet(ws_data);
-      const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Resultados_PlanilhaUnica');
-      XLSX.writeFile(wb, `resultado_planilha_unica_${dateStamp()}.xlsx`);
+      const ws=XLSX.utils.aoa_to_sheet(ws_data); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Resultados_PlanilhaUnica'); XLSX.writeFile(wb, `resultado_planilha_unica_${dateStamp()}.xlsx`);
       showStatus2('Excel exportado!','success');
     }
-    function limparResultados2(){
-      document.getElementById('resultsSection2').style.display='none';
-      document.getElementById('errorDetails2').style.display='none';
-      resultadosAba2=[]; errosAba2=[];
-      showStatus2('Resultados limpos.','info');
-    }
+    function limparResultados2(){ document.getElementById('resultsSection2').style.display='none'; document.getElementById('errorDetails2').style.display='none'; resultadosAba2=[]; errosAba2=[]; showStatus2('Resultados limpos.','info'); }
     function updateButtonsAba2(){
-      const ok=!!singleData;
+      const ok = (singleData!==null); // habilita após ler (mesmo com 0 linhas)
       document.getElementById('verifySingleBtn').disabled=!ok;
-      document.getElementById('processSingleBtn').disabled=!ok;
+      document.getElementById('processSingleBtn').disabled=!ok || !!errosAba2.length;
     }
 
-    // ======== Leitura genérica por mapeamento (ignora mesclagens) ========
-    function readRowsMapped(ws, map){
+    // ======== Leitura genérica ========
+    function readRowsMapped(ws, map, skip){
       const ref=ws['!ref']; if(!ref) return [];
       const range=XLSX.utils.decode_range(ref);
-      const start = range.s.r + 2; // pula 2 linhas de cabeçalho
+      const start = range.s.r + (isFinite(skip)?skip:2);
       const rows=[];
       for(let r=start; r<=range.e.r; r++){
-        const A = getCell(ws, map.a, r);
-        const B = getCell(ws, map.b, r);
-        const D = getCell(ws, map.d, r);
-        const E = getCell(ws, map.e, r);
-        const G = getCell(ws, map.g, r);
-        const R = getCell(ws, map.r, r);
-        const hasAny = [A,B,D,E,G,R].some(v=>v!==null && v!==undefined && v!=='');
-        if(!hasAny) continue;
-        rows.push({
-          a:A, b:B, d:D, e:E,
-          rlz: toNumberBR(G),
-          d0 : toNumberBR(R),
-        });
+        const A=getCell(ws,map.a,r), B=getCell(ws,map.b,r), D=getCell(ws,map.d,r), E=getCell(ws,map.e,r), G=getCell(ws,map.g,r), R=getCell(ws,map.r,r);
+        const hasAny=[A,B,D,E,G,R].some(v=>v!==null&&v!==undefined&&v!==''); if(!hasAny) continue;
+        rows.push({a:A,b:B,d:D,e:E, rlz:toNumberBR(G), d0:toNumberBR(R)});
       }
       return rows;
     }
 
-    // ======== Utilitários ========
-    function getCell(ws, colLetter, r0){
-      const c = XLSX.utils.decode_col(String(colLetter||'A').toUpperCase());
-      const addr = XLSX.utils.encode_cell({c, r:r0});
-      const cell = ws[addr];
-      return cell ? cell.v : null;
-    }
-    function toNumberBR(val){
-      if(val===null||val===undefined||val==='') return 0;
-      if(typeof val==='number') return val;
-      if(typeof val!=='string'){ const n=Number(val); return isNaN(n)?0:n; }
-      let s=val.trim();
-      if(/^\d{1,3}(\.\d{3})*,\d{1,}$/.test(s) || /^\d{1,3}(\.\d{3})+$/.test(s) || /^\d+,\d+$/.test(s)){
-        s=s.replace(/\./g,'').replace(',', '.');
-        const n=Number(s); return isNaN(n)?0:n;
-      }
-      const n=Number(s); return isNaN(n)?0:n;
-    }
+    // ======== Utils ========
+    function getCell(ws, colLetter, r0){ const c=XLSX.utils.decode_col(String(colLetter||'A').toUpperCase()); const addr=XLSX.utils.encode_cell({c, r:r0}); const cell=ws[addr]; return cell?cell.v:null; }
+    function toNumberBR(val){ if(val===null||val===undefined||val==='') return 0; if(typeof val==='number') return val; if(typeof val!=='string'){const n=Number(val); return isNaN(n)?0:n;} let s=val.trim(); if(/^\d{1,3}(\.\d{3})*,\d{1,}$/.test(s)||/^\d{1,3}(\.\d{3})+$/.test(s)||/^\d+,\d+$/.test(s)){ s=s.replace(/\./g,'').replace(',', '.'); const n=Number(s); return isNaN(n)?0:n;} const n=Number(s); return isNaN(n)?0:n;}
     function isNum(x){ return typeof x==='number' && isFinite(x); }
-    function sortAB(){
-      return (x,y)=> (Number(x.a)||0)-(Number(y.a)||0) || String(x.b).localeCompare(String(y.b)) || String(x.d).localeCompare(String(y.d)) || String(x.e).localeCompare(String(y.e));
-    }
-    function keyABDE(row){
-      const {a,b,d,e}=row||{};
-      if(a==null||b==null||d==null||e==null) return null;
-      return `${a}|${b}|${d}|${e}`;
-    }
-    function formatNumber(n){
-      if(n===null||n===undefined||isNaN(n)) return '0,00';
-      return new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
-    }
-    function copyTableToClipboard(table){
-      const rows=table.querySelectorAll('tr'); let clip='';
-      rows.forEach(r=>{
-        const cells=r.querySelectorAll('th,td');
-        clip += Array.from(cells).map(c=>c.textContent).join('\t')+'\n';
-      });
-      navigator.clipboard.writeText(clip).catch(()=>{});
-    }
-    function formatFileSize(bytes){
-      if(!bytes) return '0 Bytes';
-      const k=1024,s=['Bytes','KB','MB','GB'],i=Math.floor(Math.log(bytes)/Math.log(k));
-      return parseFloat((bytes/Math.pow(k,i)).toFixed(2))+' '+s[i];
-    }
+    function sortAB(){ return (x,y)=>(Number(x.a)||0)-(Number(y.a)||0)||String(x.b).localeCompare(String(y.b))||String(x.d).localeCompare(String(y.d))||String(x.e).localeCompare(String(y.e)); }
+    function keyABDE(row){ const {a,b,d,e}=row||{}; if(a==null||b==null||d==null||e==null) return null; return `${a}|${b}|${d}|${e}`; }
+    function formatNumber(n){ if(n===null||n===undefined||isNaN(n)) return '0,00'; return new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n); }
+    function copyTableToClipboard(table){ const rows=table.querySelectorAll('tr'); let clip=''; rows.forEach(r=>{const cells=r.querySelectorAll('th,td'); clip+=Array.from(cells).map(c=>c.textContent).join('\t')+'\n';}); navigator.clipboard.writeText(clip).catch(()=>{}); }
+    function formatFileSize(bytes){ if(!bytes) return '0 Bytes'; const k=1024,s=['Bytes','KB','MB','GB'],i=Math.floor(Math.log(bytes)/Math.log(k)); return parseFloat((bytes/Math.pow(k,i)).toFixed(2))+' '+s[i]; }
     function dateStamp(){ return new Date().toISOString().slice(0,10); }
 
-    // Inicializa selects com defaults
     fillMapSelects();
   </script>
 </body>
